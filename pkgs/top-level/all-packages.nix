@@ -2332,8 +2332,6 @@ with pkgs;
     inherit (darwin) moltenvk;
     stdenv =
       if stdenv.isDarwin && stdenv.isAarch64 then llvmPackages_14.stdenv
-      # https://github.com/NixOS/nixpkgs/issues/201254
-      else if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv
       else stdenv;
   };
 
@@ -5006,13 +5004,9 @@ with pkgs;
     cairo = cairo.override { xcbSupport = true; };
   };
 
-  hyprland = callPackage ../applications/window-managers/hyprwm/hyprland {
-    stdenv = gcc12Stdenv;
-  };
+  hyprland = callPackage ../applications/window-managers/hyprwm/hyprland { };
 
-  hyprpaper = callPackage ../applications/window-managers/hyprwm/hyprpaper {
-    stdenv = gcc12Stdenv;
-  };
+  hyprpaper = callPackage ../applications/window-managers/hyprwm/hyprpaper { };
 
   hysteria = callPackage ../tools/networking/hysteria { };
 
@@ -5694,6 +5688,8 @@ with pkgs;
   rsbep = callPackage ../tools/backup/rsbep { };
 
   rsbkb = callPackage ../tools/text/rsbkb { };
+
+  rsign2 = callPackage ../tools/security/rsign2 { };
 
   rsyslog = callPackage ../tools/system/rsyslog {
     withHadoop = false; # Currently Broken
@@ -6431,6 +6427,8 @@ with pkgs;
 
   ctlptl = callPackage ../development/tools/ctlptl { };
 
+  dumpnar = callPackage ../tools/archivers/dumpnar { };
+
   snooze = callPackage ../tools/system/snooze { };
 
   cudaPackages_10_0 = callPackage ./cuda-packages.nix { cudaVersion = "10.0"; };
@@ -6767,6 +6765,8 @@ with pkgs;
   driftnet = callPackage ../tools/networking/driftnet { };
 
   driftctl = callPackage ../applications/networking/cluster/driftctl { };
+
+  eks-node-viewer = callPackage ../applications/networking/cluster/eks-node-viewer { };
 
   drill = callPackage ../tools/networking/drill {
     inherit (darwin.apple_sdk.frameworks) Security;
@@ -7243,7 +7243,7 @@ with pkgs;
 
   f2fs-tools = callPackage ../tools/filesystems/f2fs-tools { };
 
-  Fabric = with python3Packages; toPythonApplication Fabric;
+  Fabric = with python3Packages; toPythonApplication fabric;
 
   fail2ban = callPackage ../tools/security/fail2ban { };
 
@@ -7663,7 +7663,7 @@ with pkgs;
   })
     garage
       garage_0_7 garage_0_8
-      garage_0_7_3 garage_0_8_1;
+      garage_0_7_3 garage_0_8_2;
 
   garmin-plugin = callPackage ../applications/misc/garmin-plugin { };
 
@@ -7777,7 +7777,9 @@ with pkgs;
 
   gitleaks = callPackage ../tools/security/gitleaks { };
 
-  gitaly = callPackage ../applications/version-management/gitlab/gitaly { };
+  gitaly = callPackage ../applications/version-management/gitlab/gitaly {
+    libgit2 = libgit2_1_5;
+  };
 
   gitqlient = libsForQt5.callPackage ../applications/version-management/gitqlient { };
 
@@ -8852,12 +8854,7 @@ with pkgs;
   wrapKakoune = kakoune: attrs: callPackage ../applications/editors/kakoune/wrapper.nix (attrs // { inherit kakoune; });
   kakounePlugins = recurseIntoAttrs (callPackage ../applications/editors/kakoune/plugins { });
 
-  kakoune-unwrapped = callPackage ../applications/editors/kakoune {
-    # See comments on https://github.com/NixOS/nixpkgs/pull/198836
-    # Remove below when stdenv for linux-aarch64 become recent enough.
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
-  };
+  kakoune-unwrapped = callPackage ../applications/editors/kakoune { };
   kakoune = wrapKakoune kakoune-unwrapped {
     plugins = [ ];  # override with the list of desired plugins
   };
@@ -9825,7 +9822,7 @@ with pkgs;
   mangohud = callPackage ../tools/graphics/mangohud {
     libXNVCtrl = linuxPackages.nvidia_x11.settings.libXNVCtrl;
     mangohud32 = pkgsi686Linux.mangohud;
-    inherit (python3Packages) Mako;
+    inherit (python3Packages) mako;
   };
 
   manix = callPackage ../tools/nix/manix {
@@ -10420,7 +10417,7 @@ with pkgs;
   # ntfsprogs are merged into ntfs-3g
   ntfsprogs = pkgs.ntfs3g;
 
-  ntfy = callPackage ../tools/misc/ntfy { python = python39; };
+  ntfy = callPackage ../tools/misc/ntfy { };
 
   ntfy-sh = callPackage ../tools/misc/ntfy-sh { };
 
@@ -11764,8 +11761,6 @@ with pkgs;
 
   rpm-ostree = callPackage ../tools/misc/rpm-ostree {
     gperf = gperf_3_0;
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
   };
 
   rpm2targz = callPackage ../tools/archivers/rpm2targz { };
@@ -12161,6 +12156,8 @@ with pkgs;
   slirp4netns = callPackage ../tools/networking/slirp4netns { };
 
   slowlorust = callPackage ../tools/networking/slowlorust { };
+
+  slsa-verifier = callPackage ../tools/security/slsa-verifier { };
 
   slsnif = callPackage ../tools/misc/slsnif { };
 
@@ -12783,6 +12780,8 @@ with pkgs;
   tmate = callPackage ../tools/misc/tmate { };
 
   tmate-ssh-server = callPackage ../servers/tmate-ssh-server { };
+
+  tmpreaper = callPackage ../tools/misc/tmpreaper { };
 
   tmpwatch = callPackage ../tools/misc/tmpwatch  { };
 
@@ -14543,7 +14542,6 @@ with pkgs;
   inherit (let
       num =
         if (with stdenv.targetPlatform; isVc4 || libc == "relibc") then 6
-        else if (stdenv.targetPlatform.isAarch64 && stdenv.isLinux) then 9
         else 12;
       numS = toString num;
     in {
@@ -15895,8 +15893,6 @@ with pkgs;
   rust_1_67 = callPackage ../development/compilers/rust/1_67.nix {
     inherit (darwin.apple_sdk.frameworks) CoreFoundation Security SystemConfiguration;
     llvm_15 = llvmPackages_15.libllvm;
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc11Stdenv else stdenv;
   };
   rust = rust_1_67;
 
@@ -16265,7 +16261,10 @@ with pkgs;
   };
   swiPrologWithGui = swiProlog.override { withGui = true; };
 
-  tbb = callPackage ../development/libraries/tbb { };
+  tbb_2020_3 = callPackage ../development/libraries/tbb/2020_3.nix { };
+  tbb_2021_8 = callPackage ../development/libraries/tbb { };
+  # many packages still fail with latest version
+  tbb = tbb_2020_3;
 
   terra = callPackage ../development/compilers/terra {
     llvmPackages = llvmPackages_11;
@@ -17286,9 +17285,10 @@ with pkgs;
     antlr4_8
     antlr4_9
     antlr4_10
-    antlr4_11;
+    antlr4_11
+    antlr4_12;
 
-  antlr4 = antlr4_11;
+  antlr4 = antlr4_12;
 
   antlr = antlr4;
 
@@ -18043,6 +18043,8 @@ with pkgs;
 
   gdbgui = python3Packages.callPackage ../development/tools/misc/gdbgui { };
 
+  pifpaf = callPackage ../development/tools/pifpaf { };
+
   pmd = callPackage ../development/tools/analysis/pmd {
     openjdk = openjdk8; # TODO: remove override https://github.com/NixOS/nixpkgs/pull/89731
   };
@@ -18105,6 +18107,8 @@ with pkgs;
 
   gnumake = callPackage ../development/tools/build-managers/gnumake { };
   gnumake42 = callPackage ../development/tools/build-managers/gnumake/4.2 { };
+  # openjdk-17 fails on 4.4.1. Provide 4.4 until we fix it.
+  gnumake44 = callPackage ../development/tools/build-managers/gnumake/4.4 { };
 
   go-licenses = callPackage ../development/tools/misc/go-licenses  { };
 
@@ -18955,7 +18959,8 @@ with pkgs;
   texinfo6_5 = callPackage ../development/tools/misc/texinfo/6.5.nix { }; # needed for allegro
   texinfo6_7 = callPackage ../development/tools/misc/texinfo/6.7.nix { }; # needed for gpm, iksemel and fwknop
   texinfo6 = callPackage ../development/tools/misc/texinfo/6.8.nix { };
-  texinfo = texinfo6;
+  texinfo7 = callPackage ../development/tools/misc/texinfo/7.0.nix { };
+  texinfo = texinfo7;
   texinfoInteractive = texinfo.override { interactive = true; };
 
   texi2html = callPackage ../development/tools/misc/texi2html { };
@@ -19334,11 +19339,7 @@ with pkgs;
     else callPackage ../os-specific/linux/bionic-prebuilt { };
 
 
-  bobcat = callPackage ../development/libraries/bobcat {
-    # C++20 is required, aarch64-linux has gcc 9 by default
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
-  };
+  bobcat = callPackage ../development/libraries/bobcat { };
 
   boehmgc = callPackage ../development/libraries/boehm-gc { };
 
@@ -20123,6 +20124,16 @@ with pkgs;
       sha256 = "sha256-7atNkOBzX+nU1gtFQEaE+EF1L+eex+Ajhq2ocoJY920=";
     };
     patches = [];
+  });
+
+  libgit2_1_5 = libgit2.overrideAttrs (_: rec {
+    version = "1.5.1";
+    src = pkgs.fetchFromGitHub {
+      owner = "libgit2";
+      repo = "libgit2";
+      rev = "v${version}";
+      hash = "sha256-KzBMwpqn6wUFhgB3KDclBS0BvZSVcasM5AG/y+L91xM=";
+    };
   });
 
   libgit2-glib = callPackage ../development/libraries/libgit2-glib { };
@@ -22528,10 +22539,7 @@ with pkgs;
 
   mtpfs = callPackage ../tools/filesystems/mtpfs { };
 
-  mtxclient = callPackage ../development/libraries/mtxclient {
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
-  };
+  mtxclient = callPackage ../development/libraries/mtxclient { };
 
   mu = callPackage ../tools/networking/mu {
     texinfo = texinfo4;
@@ -23928,13 +23936,7 @@ with pkgs;
 
   vsqlite = callPackage ../development/libraries/vsqlite { };
 
-  vte = callPackage ../development/libraries/vte {
-    # Needs GCC ≥10 but aarch64 defaults to GCC 9.
-    stdenv =
-      if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU && lib.versionOlder stdenv.cc.version "10"
-      then clangStdenv
-      else stdenv;
-  };
+  vte = callPackage ../development/libraries/vte { };
 
   vte-gtk4 = vte.override {
     gtkVersion = "4";
@@ -24198,8 +24200,7 @@ with pkgs;
   zig_0_10 = darwin.apple_sdk_11_0.callPackage ../development/compilers/zig/0.10.nix {
     llvmPackages = llvmPackages_15;
   };
-  # Zig 0.10.1 is broken on Darwin, so use 0.9.1 on Darwin instead.
-  zig = if stdenv.isDarwin then zig_0_9 else zig_0_10;
+  zig = zig_0_10;
 
   zimlib = callPackage ../development/libraries/zimlib { };
 
@@ -24208,6 +24209,8 @@ with pkgs;
   zita-alsa-pcmi = callPackage ../development/libraries/audio/zita-alsa-pcmi { };
 
   zita-resampler = callPackage ../development/libraries/audio/zita-resampler { };
+
+  zix = callPackage ../development/libraries/audio/zix { };
 
   zz = callPackage ../development/compilers/zz { };
 
@@ -24309,9 +24312,9 @@ with pkgs;
   ### DEVELOPMENT / GO
 
   # the unversioned attributes should always point to the same go version
-  go = go_1_19;
-  buildGoModule = buildGo119Module;
-  buildGoPackage = buildGo119Package;
+  go = go_1_20;
+  buildGoModule = buildGo120Module;
+  buildGoPackage = buildGo120Package;
 
   # requires a newer Apple SDK
   go_1_18 = darwin.apple_sdk_11_0.callPackage ../development/compilers/go/1.18.nix {
@@ -26511,7 +26514,7 @@ with pkgs;
 
   lsscsi = callPackage ../os-specific/linux/lsscsi { };
 
-  lvm2-2_03 = callPackage ../os-specific/linux/lvm2/2_03.nix {
+  lvm2 = callPackage ../os-specific/linux/lvm2/2_03.nix {
     # udev is the same package as systemd which depends on cryptsetup
     # which depends on lvm2 again.  But we only need the libudev part
     # which does not depend on cryptsetup.
@@ -26521,10 +26524,6 @@ with pkgs;
     # systemd (optionally, but on by default) on cryptsetup and cryptsetup depends on lvm2
     util-linux = util-linuxMinimal;
   };
-  lvm2-2_02 = callPackage ../os-specific/linux/lvm2/2_02.nix {
-    udev = systemdMinimal;
-  };
-  lvm2 = if stdenv.hostPlatform.isMusl then lvm2-2_02 else lvm2-2_03;
 
   lvm2_dmeventd = lvm2.override {
     enableDmeventd = true;
@@ -26835,8 +26834,8 @@ with pkgs;
   # Building with `xen` instead of `xen-slim` is possible, but makes no sense.
   qemu_xen = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen-slim; });
   qemu_xen-light = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen-light; });
-  qemu_xen_4_10 = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen_4_10-slim; });
-  qemu_xen_4_10-light = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen_4_10-light; });
+  qemu_xen_4_15 = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen_4_15-slim; });
+  qemu_xen_4_15-light = lowPrio (qemu.override { hostCpuOnly = true; xenSupport = true; xen = xen_4_15-light; });
 
   qemu_test = lowPrio (qemu.override { hostCpuOnly = true; nixosTestRunner = true; });
 
@@ -29952,9 +29951,7 @@ with pkgs;
 
   fbida = callPackage ../applications/graphics/fbida { };
 
-  fclones = callPackage ../tools/misc/fclones {
-    inherit (darwin.apple_sdk.frameworks) AppKit;
-  };
+  fclones = callPackage ../tools/misc/fclones { };
 
   fcp = callPackage ../tools/misc/fcp { };
 
@@ -30176,7 +30173,7 @@ with pkgs;
 
   hydrus = python3Packages.callPackage ../applications/graphics/hydrus {
     inherit miniupnpc swftools;
-    inherit (qt5) wrapQtAppsHook;
+    inherit (qt6) wrapQtAppsHook qtbase qtcharts;
   };
 
   jetbrains = (recurseIntoAttrs (callPackages ../applications/editors/jetbrains {
@@ -31272,8 +31269,7 @@ with pkgs;
   ladspa-sdk = callPackage ../applications/audio/ladspa-sdk { };
 
   ladybird = qt6Packages.callPackage ../applications/networking/browsers/ladybird {
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isDarwin then llvmPackages_14.stdenv else gcc12Stdenv;
+    stdenv = if stdenv.isDarwin then llvmPackages_14.stdenv else stdenv;
   };
 
   lazpaint = callPackage ../applications/graphics/lazpaint { };
@@ -32296,10 +32292,7 @@ with pkgs;
     inherit (darwin.apple_sdk.frameworks) AppKit Cocoa Foundation;
   };
 
-  nheko = libsForQt5.callPackage ../applications/networking/instant-messengers/nheko {
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
-  };
+  nheko = libsForQt5.callPackage ../applications/networking/instant-messengers/nheko { };
 
   nimdow = callPackage ../applications/window-managers/nimdow { };
 
@@ -34544,9 +34537,9 @@ with pkgs;
   xen-slim = xenPackages.xen-slim;
   xen-light = xenPackages.xen-light;
 
-  xen_4_10 = xenPackages.xen_4_10-vanilla;
-  xen_4_10-slim = xenPackages.xen_4_10-slim;
-  xen_4_10-light = xenPackages.xen_4_10-light;
+  xen_4_15 = xenPackages.xen_4_15-vanilla;
+  xen_4_15-slim = xenPackages.xen_4_15-slim;
+  xen_4_15-light = xenPackages.xen_4_15-light;
 
   xkbset = callPackage ../tools/X11/xkbset { };
 
@@ -37662,8 +37655,6 @@ with pkgs;
   root = callPackage ../applications/science/misc/root {
     python = python3;
     inherit (darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
-    # https://github.com/NixOS/nixpkgs/issues/201254
-    stdenv = if stdenv.isLinux && stdenv.isAarch64 && stdenv.cc.isGNU then gcc12Stdenv else stdenv;
   };
 
   root5 = lowPrio (callPackage ../applications/science/misc/root/5.nix {
@@ -38326,7 +38317,9 @@ with pkgs;
 
   dnadd = callPackage ../tools/nix/dnadd { };
 
-  nix-eval-jobs = callPackage ../tools/package-management/nix-eval-jobs { };
+  nix-eval-jobs = callPackage ../tools/package-management/nix-eval-jobs {
+    nix = nixVersions.nix_2_14;
+  };
 
   nix-doc = callPackage ../tools/package-management/nix-doc { };
 
@@ -38855,6 +38848,8 @@ with pkgs;
   unicode-paracode = callPackage ../tools/misc/unicode { };
 
   unixcw = libsForQt5.callPackage ../applications/radio/unixcw { };
+
+  valent = callPackage ../applications/misc/valent { };
 
   vault = callPackage ../tools/security/vault { };
 
